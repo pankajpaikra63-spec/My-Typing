@@ -1,0 +1,21 @@
+{
+  "name": "MonkeyClone Ultimate",
+  "short_name": "MonkeyClone",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#323437",
+  "theme_color": "#e2b714",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

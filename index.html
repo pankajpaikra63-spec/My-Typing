@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- FIX: Ensures keyboard doesn't hide text -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <title>MonkeyClone - Ultimate</title>
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#e2b714">
+    
+    <!-- iOS Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MonkeyClone">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500&family=Roboto+Mono:wght@400;500;700&family=Inconsolata:wght@500&family=Source+Code+Pro:wght@500&display=swap" rel="stylesheet">
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+<style>
+:root {
+    --bg-color: #323437;
+    --main-color: #e2b714;
+    --caret-color: #e2b714;
+    --sub-color: #646669;
+    --text-color: #d1d0c5;
+    --error-color: #ca4754;
+    
+    /* Fonts Defaults */
+    --font-mono: 'Roboto Mono', monospace;
+    --font-ui: 'Lexend Deca', sans-serif;
+    --typing-font-size: 1.6rem; /* Ye variable ab har jagah use hoga */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-ui);
+    height: 100vh; width: 100vw;
+    display: grid; grid-template-rows: auto 1fr auto;
+    overflow-x: hidden; transition: background-color 0.2s, color 0.2s;
+}
+
+/* HEADER & FOOTER */
+header { width: 100%; max-width: 1100px; margin: 0 auto; padding: 2rem; display: flex; align-items: center; }
+.logo { display: flex; align-items: center; gap: 10px; font-size: 1.8rem; cursor: pointer; }
+.logo .icon { color: var(--main-color); }
+.logo .text { font-weight: 700; color: var(--text-color); font-size: 1.5rem; margin-top: -4px;}
+
+footer { width: 100%; max-width: 1100px; margin: 0 auto; padding: 2rem; display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--sub-color); }
+footer a { color: var(--sub-color); text-decoration: none; margin-right: 1.5rem; }
+
+/* MAIN LAYOUT */
+main { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; padding: 0 1.5rem; }
+
+/* CONFIG BAR */
+.config-bar {
+    display: flex; justify-content: center; align-items: center;
+    background-color: rgba(0,0,0,0.15); width: fit-content; max-width: 100%;
+    margin: 0 auto 1rem; padding: 0.4rem 1rem; border-radius: 8px;
+    font-size: 0.9rem; flex-wrap: wrap; gap: 0.5rem;
+}
+.config-group { display: flex; gap: 5px; align-items: center; }
+.config-btn {
+    background: transparent; border: none; color: var(--sub-color);
+    font-family: var(--font-ui); font-weight: 500; cursor: pointer;
+    padding: 0.3rem 0.6rem; transition: 0.2s; border-radius: 4px;
+}
+.config-btn:hover { color: var(--text-color); }
+.config-btn.active { color: var(--main-color); font-weight: 700; }
+.divider { width: 4px; height: 20px; background-color: rgba(255,255,255,0.1); margin: 0 0.5rem; border-radius: 2px; }
+
+/* INDICATORS */
+.mode-indicator { text-align: center; color: var(--main-color); margin-bottom: 1rem; font-weight: bold; font-size: 0.9rem; height: 1.2rem; }
+.caps-warning {
+    background-color: var(--main-color); color: var(--bg-color);
+    width: fit-content; margin: 0 auto 1rem; padding: 0.5rem 1rem;
+    border-radius: 0.25rem; font-weight: bold;
+}
+
+/* TYPING AREA */
+.timer-wrapper { height: 30px; margin-bottom: 0.5rem; }
+.timer { color: var(--main-color); font-size: 1.5rem; font-family: var(--font-mono); opacity: 0; font-weight: 500; }
+.timer.show { opacity: 1; }
+
+.typing-area { position: relative; outline: none; margin-bottom: 1rem; }
+
+/* TEXT DISPLAY (FONT FIXES HERE) */
+.text-display {
+    font-family: var(--font-mono); /* Now uses variable correctly */
+    font-size: var(--typing-font-size); /* Dynamic Size Variable */
+    line-height: 1.5;
+    color: var(--sub-color); 
+    word-spacing: 0.5rem; 
+    user-select: none;
+    height: 150px; 
+    overflow: hidden; 
+    font-weight: 500; 
+    text-align: left;
+    transition: font-size 0.2s, font-family 0.2s; /* Smooth transition */
+}
+
+.text-display span { position: relative; }
+.text-display span.correct { color: var(--text-color); }
+.text-display span.incorrect { color: var(--error-color); }
+.text-display.blind-active span.incorrect { color: var(--text-color); }
+
+/* Static Cursor */
+.text-display span.cursor::before {
+    content: ''; position: absolute; left: -2px; top: 10%; width: 2px; height: 80%;
+    background-color: var(--caret-color); z-index: 10;
+}
+
+.hidden-input { position: absolute; opacity: 0; top: 0; left: 0; pointer-events: none; }
+
+.tips { display: flex; flex-direction: column; align-items: center; gap: 1rem; opacity: 0; transition: 0.3s; }
+.view.active:hover .tips { opacity: 1; }
+.restart-icon-btn { background: transparent; border: none; color: var(--sub-color); font-size: 1.5rem; cursor: pointer; }
+.restart-icon-btn:hover { color: var(--text-color); }
+.key { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px; }
+
+/* SETTINGS MODAL */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: flex-start;
+    padding-top: 5vh; z-index: 1000; overflow-y: auto;
+}
+.modal-content {
+    background: var(--bg-color); width: 900px; max-width: 95%;
+    padding: 2rem; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    margin-bottom: 5rem;
+}
+.modal-header { display: flex; justify-content: space-between; margin-bottom: 2rem; }
+.modal-header h2 { color: var(--text-color); margin: 0; }
+.close-btn { background: none; border: none; font-size: 2rem; color: var(--sub-color); cursor: pointer; }
+
+.settings-group { margin-bottom: 3rem; }
+.group-title { color: var(--main-color); font-size: 1.2rem; margin-bottom: 1.5rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+.setting-item { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.meta { max-width: 60%; }
+.meta .name { color: var(--text-color); font-size: 1rem; margin-bottom: 5px; font-weight: bold; }
+.meta .desc { color: var(--sub-color); font-size: 0.85rem; line-height: 1.4; }
+
+.button-group { display: flex; background: rgba(0,0,0,0.2); border-radius: 5px; padding: 3px; }
+.set-btn { background: transparent; border: none; color: var(--sub-color); padding: 0.5rem 1rem; cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; border-radius: 3px; transition: 0.2s; }
+.set-btn:hover { color: var(--text-color); }
+.set-btn.active { background: var(--main-color); color: var(--bg-color); font-weight: bold; }
+.setting-input { background: rgba(0,0,0,0.2); border: none; color: var(--text-color); padding: 0.5rem 1rem; border-radius: 5px; width: 100px; text-align: center; font-family: var(--font-mono); }
+.setting-input:focus { outline: 2px solid var(--main-color); }
+
+.theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+.theme-btn { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-color); display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: 0.2s; }
+.theme-btn:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+.theme-btn.active { border-color: var(--main-color); background: rgba(255,255,255,0.1); }
+.color-dots { display: flex; gap: 4px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Results & Custom UI */
+.stats-container { display: flex; gap: 2rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap; }
+.group .val { font-size: 2.5rem; font-weight: 700; color: var(--text-color); }
+.group .val.big { font-size: 4rem; color: var(--main-color); }
+.chart-wrapper { width: 100%; height: 250px; margin-bottom: 2rem; }
+.fail-message { color: var(--error-color); font-size: 2rem; font-weight: bold; margin-bottom: 1rem; text-align: center; }
+.custom-ui { width: 100%; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+.custom-ui textarea { width: 100%; height: 200px; background: rgba(0,0,0,0.2); border: 2px dashed var(--sub-color); color: var(--text-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; resize: none; }
+.action-btn { background: var(--main-color); color: var(--bg-color); padding: 0.8rem 2rem; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
+.hidden { display: none !important; }
+
+/* MOBILE FIXES */
+@media (max-width: 768px) {
+    .setting-item { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .meta { max-width: 100%; }
+    .button-group { width: 100%; justify-content: space-between; }
+    .set-btn { flex: 1; }
+    
+    /* KEYBOARD OPEN STATE FIX */
+    body.keyboard-open header, body.keyboard-open footer, body.keyboard-open .config-bar { display: none !important; }
+    body.keyboard-open main { padding-top: 1rem; padding-bottom: 300px; justify-content: flex-start; }
+    
+    /* MOBILE FONT FIX: Use the variable! */
+    body.keyboard-open .text-display { 
+        height: 45vh; 
+        max-height: 400px;
+        font-size: var(--typing-font-size); /* Ensure user setting applies here too */
+    }
+}
+</style>
+</head>
+<body>
+    
+    <header>
+        <div class="logo">
+            <div class="icon">⌨</div>
+            <div class="text">monkeyclone</div>
+        </div>
+    </header>
+
+    <main>
+        
+        <!-- Config Bar -->
+        <div id="config-bar" class="config-bar">
+            <div class="config-group">
+                <button class="config-btn active" data-mode="words">words</button>
+                <button class="config-btn" data-mode="quotes">quotes</button>
+                <button class="config-btn" data-mode="code">code</button>
+                <button class="config-btn" data-mode="custom">custom</button>
+            </div>
+            <div class="divider"></div>
+            <div class="config-group">
+                <button class="config-btn" data-time="15">15</button>
+                <button class="config-btn active" data-time="30">30</button>
+                <button class="config-btn" data-time="60">60</button>
+                <button class="config-btn" data-time="120">120</button>
+            </div>
+            <div class="divider"></div>
+            <button id="settings-btn" class="config-btn icon-btn">⚙️ Settings</button>
+        </div>
+
+        <!-- Mode Indicator -->
+        <div id="mode-indicator" class="mode-indicator hidden"></div>
+        <div id="caps-warning" class="caps-warning hidden">🔒 Caps Lock</div>
+
+        <!-- TYPING AREA -->
+        <div id="typing-view" class="view active">
+            <div class="timer-wrapper">
+                <div id="timer" class="timer">30</div>
+            </div>
+
+            <div id="typing-area" class="typing-area" tabindex="0">
+                <div id="text-to-type" class="text-display"></div>
+                <input type="text" id="hidden-input" class="hidden-input" autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="tips">
+                <button id="restart-button" class="restart-icon-btn" title="Restart Test">⟳</button>
+                <div class="tip-text">Press <span class="key" id="restart-key-display">Tab</span> to restart</div>
+            </div>
+        </div>
+
+        <!-- CUSTOM UI -->
+        <div id="custom-ui" class="custom-ui hidden">
+            <textarea id="custom-text-input" placeholder="Paste your text here..."></textarea>
+            <button id="start-custom-test" class="action-btn">Start Test</button>
+        </div>
+
+        <!-- RESULTS VIEW -->
+        <div id="results-view" class="view hidden">
+            <div id="fail-message" class="fail-message hidden">Test Failed!</div>
+            <div class="stats-container">
+                <div class="group main">
+                    <div class="label">wpm</div>
+                    <div class="val big" id="result-wpm">0</div>
+                </div>
+                <div class="group">
+                    <div class="label">acc</div>
+                    <div class="val" id="result-accuracy">0%</div>
+                </div>
+                <div class="group">
+                    <div class="label">time</div>
+                    <div class="val" id="result-time">0s</div>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="history-chart"></canvas></div>
+            <div class="actions">
+                <button id="next-test-btn" class="action-btn">Next Test ➜</button>
+                <button id="certificate-button" class="action-btn secondary hidden">📜 Certificate</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SETTINGS MODAL (Detailed like Image) -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button id="close-settings" class="close-btn">×</button>
+            </div>
+            
+            <!-- 1. BEHAVIOR -->
+            <div class="settings-group">
+                <h3 class="group-title">Behavior</h3>
+                
+                <!-- Difficulty -->
+                <div class="setting-item">
+                    <div class="meta">
+                        <div class="name">Test Difficulty</div>
+                        <div class="desc">Normal is classic. Expert fails on low accuracy. Master fails on error.</div>
+                    </div>
+                    <div class="actions button-group" data-key="difficulty">
+                        <button class="set-btn active" data-val="normal">normal</button>
+                        <button class="set-btn" data-val="expert">expert</button>
+                        <button class="set-btn" data-val="master">master</button>
+                    </div>
+                </div>
+
+                <!-- Quick Restart -->
+                <div class="setting-item">
+                    <div class="meta">
+                        <div class="name">Quick Restart</div>
+                        <div class="desc">Key used to quickly restart the test.</div>
+                    </div>
+                    <div class="actions button-group" data-key="restartKey">
+                        <button class="set-btn active" data-val="Tab">tab</button>
+                        <button class="set-btn" data-val="Escape">esc</button>
+                        <button class="set-btn" data-val="Enter">enter</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. APPEARANCE -->
+            <div class="settings-group">
+                <h3 class="group-title">Appearance</h3>
+
+                <!-- Font Size -->
+                <div class="setting-item">
+                    <div class="meta">
+                        <div class="name">Font Size</div>
+                        <div class="desc">Change the size of the test words.</div>
+                    </div>
+                    <div class="actions button-group" data-key="fontSize">
+                        <button class="set-btn" data-val="1.2">1</button>
+                        <button class="set-btn active" data-val="1.6">2</button>
+                        <button class="set-btn" data-val="2.2">3</button>
+                        <button class="set-btn" data-val="3.0">4</button>
+                    </div>
+                </div>
+
+                <!-- Font Family -->
+                <div class="setting-item">
+                    <div class="meta">
+                        <div class="name">Font Family</div>
+                        <div class="desc">Change the typeface.</div>
+                    </div>
+                    <div class="actions button-group" data-key="fontFamily">
+                        <button class="set-btn active" data-val="'Roboto Mono', monospace">Roboto</button>
+                        <button class="set-btn" data-val="'Inconsolata', monospace">Inconsolata</button>
+                        <button class="set-btn" data-val="'Source Code Pro', monospace">Source</button>
+                    </div>
+                </div>
+
+                <!-- Blind Mode -->
+                <div class="setting-item">
+                    <div class="meta">
+                        <div class="name">Blind Mode</div>
+                        <div class="desc">No errors are highlighted while typing.</div>
+                    </div>
+                    <div class="actions button-group" data-key="blindMode">
+                        <button class="set-btn active" data-val="off">off</button>
+                        <button class="set-btn" data-val="on">on</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. THEME -->
+            <div class="settings-group">
+                <h3 class="group-title">Theme</h3>
+                <div class="theme-grid" id="theme-grid"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <div class="left-links">
+            <a href="#">GitHub</a>
+            <a href="#">Discord</a>
+        </div>
+        <div class="right-links"><span class="muted">v6.0 Ultimate</span></div>
+    </footer>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    // --- DATA ---
+    const THEMES = {
+        'serika_dark': { name: 'Serika Dark', bg: '#323437', main: '#e2b714', sub: '#646669', text: '#d1d0c5' },
+        'carbon': { name: 'Carbon', bg: '#313131', main: '#f66e0d', sub: '#616161', text: '#f5e6c8' },
+        'miami': { name: 'Miami', bg: '#f35588', main: '#05dfd7', sub: '#941c5a', text: '#fff' },
+        'arch': { name: 'Arch', bg: '#0c0d11', main: '#7febff', sub: '#454864', text: '#f6f9fc' },
+        'monokai': { name: 'Monokai', bg: '#272822', main: '#a6e22e', sub: '#75715e', text: '#f8f8f2' },
+        'botanical': { name: 'Botanical', bg: '#292a2b', main: '#495e57', sub: '#666666', text: '#e8e8e8' },
+        '8008': { name: '8008', bg: '#333a45', main: '#f44c7f', sub: '#939eae', text: '#e9ecf0' },
+        'bliss': { name: 'Bliss', bg: '#262727', main: '#f0d3c9', sub: '#665957', text: '#fff' },
+        'dots': { name: 'Dots', bg: '#212533', main: '#fff', sub: '#4a5d80', text: '#fff' },
+        'dracula': { name: 'Dracula', bg: '#282a36', main: '#bd93f9', sub: '#6272a4', text: '#f8f8f2' },
+        'olivia': { name: 'Olivia', bg: '#1c1b1d', main: '#deaf9d', sub: '#4a464d', text: '#f2f2f2' },
+    };
+
+    const WORDS = "the be of and a to in he have it that for they I with as not on she at by this we you do but from or which one would all will there say who make when can more if no man out other so what time up go about than into could state only new year some take come these know see use get like then first any work now may such give over think most even find day also after way many must look before great back through long where much should well people down own just because good each those feel seem how high too place little world very still nation hand old life tell write become here show house both between need mean call develop under last right move thing general school never same another begin while number part turn real leave might want point form off child few small since against ask late home interest large person end open public follow during present without again hold govern around possible head consider word program problem however lead system set order eye plan run keep face fact group play stand increase early course change help line".split(' ');
+    const QUOTES = ["The only way to do great work is to love what you do.", "Success is not final, failure is not fatal.", "In the end, it's not the years in your life that count."];
+    const CODE = ["const add = (a, b) => a + b;", "import React from 'react';", "console.log('Hello World');"];
+
+    // STATE
+    let state = { 
+        mode: 'words', timeLimit: 30, timeLeft: 30, text: "", 
+        isRunning: false, isPaused: false, timer: null, 
+        stats: { correct: 0, incorrect: 0, chars: 0 }, 
+        currentTheme: 'serika_dark',
+        difficulty: 'normal', 
+        restartKey: 'Tab',
+        blindMode: false,
+        minAccuracy: 0,
+        minSpeed: 0
+    };
+
+    const els = {
+        textDisplay: document.getElementById('text-to-type'),
+        input: document.getElementById('hidden-input'),
+        timer: document.getElementById('timer'),
+        configBar: document.getElementById('config-bar'),
+        resultsView: document.getElementById('results-view'),
+        typingView: document.getElementById('typing-view'),
+        settingsModal: document.getElementById('settings-modal'),
+        themeGrid: document.getElementById('theme-grid'),
+        customUi: document.getElementById('custom-ui'),
+        customInput: document.getElementById('custom-text-input'),
+        restartBtn: document.getElementById('restart-button'),
+        nextTestBtn: document.getElementById('next-test-btn'),
+        certBtn: document.getElementById('certificate-button'),
+        settingsBtn: document.getElementById('settings-btn'),
+        closeSettings: document.getElementById('close-settings'),
+        capsWarning: document.getElementById('caps-warning'),
+        startCustomBtn: document.getElementById('start-custom-test'),
+        chart: document.getElementById('history-chart'),
+        modeIndicator: document.getElementById('mode-indicator'),
+        failMessage: document.getElementById('fail-message'),
+        restartKeyDisplay: document.getElementById('restart-key-display'),
+        typingArea: document.getElementById('typing-area'),
+        minAccInput: document.getElementById('min-acc-input'),
+        minSpeedInput: document.getElementById('min-speed-input')
+    };
+
+    function init() {
+        if (!els.textDisplay) return;
+        renderThemes();
+        setupEvents();
+        setupSettingsListeners();
+        resetTest();
+    }
+
+    // --- LOGIC ---
+    function generateText() {
+        if (state.mode === 'words') state.text = [...WORDS].sort(() => 0.5 - Math.random()).slice(0, 100).join(' ');
+        else if (state.mode === 'quotes') state.text = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+        else if (state.mode === 'code') state.text = CODE[Math.floor(Math.random() * CODE.length)];
+    }
+
+    function renderText() {
+        els.textDisplay.innerHTML = '';
+        if (state.blindMode) els.textDisplay.classList.add('blind-active');
+        else els.textDisplay.classList.remove('blind-active');
+
+        state.text.split('').forEach(char => {
+            const span = document.createElement('span');
+            span.textContent = char;
+            els.textDisplay.appendChild(span);
+        });
+        if(els.textDisplay.firstChild) els.textDisplay.firstChild.classList.add('cursor');
+    }
+
+    function startTest() {
+        if (state.isRunning) return;
+        state.isRunning = true;
+        els.timer.classList.add('show');
+        els.configBar.style.opacity = '0';
+
+        state.timer = setInterval(() => {
+            if (!state.isPaused) {
+                state.timeLeft--;
+                els.timer.textContent = state.timeLeft;
+                if (state.timeLeft <= 0) endTest();
+            }
+        }, 1000);
+    }
+
+    function failTest(reason) {
+        clearInterval(state.timer);
+        state.isRunning = false;
+        document.body.classList.remove('keyboard-open');
+        
+        const timeSpent = (state.timeLimit - state.timeLeft) / 60 || 1/60;
+        const netWPM = Math.round((state.stats.correct / 5) / timeSpent) || 0;
+        const totalChars = state.stats.correct + state.stats.incorrect;
+        const accuracy = totalChars > 0 ? Math.round((state.stats.correct / totalChars) * 100) : 0;
+
+        document.getElementById('result-wpm').textContent = netWPM;
+        document.getElementById('result-accuracy').textContent = accuracy + '%';
+        document.getElementById('result-time').textContent = (state.timeLimit - state.timeLeft) + 's';
+
+        els.typingView.classList.add('hidden');
+        els.resultsView.classList.remove('hidden');
+        els.failMessage.classList.remove('hidden');
+        els.failMessage.textContent = reason;
+        document.querySelector('.stats-container').style.opacity = '1'; 
+        els.configBar.style.opacity = '1';
+        if (els.certBtn) els.certBtn.classList.add('hidden');
+        
+        renderChart([0, netWPM]);
+    }
+
+    function endTest() {
+        clearInterval(state.timer);
+        state.isRunning = false;
+        document.body.classList.remove('keyboard-open');
+        
+        const timeSpent = (state.timeLimit - state.timeLeft) / 60 || 1;
+        const netWPM = Math.round((state.stats.correct / 5) / timeSpent) || 0;
+        const totalChars = state.stats.correct + state.stats.incorrect;
+        const accuracy = totalChars > 0 ? Math.round((state.stats.correct / totalChars) * 100) : 0;
+
+        if (state.difficulty === 'expert' && accuracy < 95) return failTest(`Failed: Accuracy ${accuracy}% < 95%`);
+        if (state.minAccuracy > 0 && accuracy < state.minAccuracy) return failTest(`Failed: Accuracy ${accuracy}% < ${state.minAccuracy}%`);
+        if (state.minSpeed > 0 && netWPM < state.minSpeed) return failTest(`Failed: Speed ${netWPM} < ${state.minSpeed} WPM`);
+
+        document.getElementById('result-wpm').textContent = netWPM;
+        document.getElementById('result-accuracy').textContent = accuracy + '%';
+        document.getElementById('result-time').textContent = (state.timeLimit - state.timeLeft) + 's';
+
+        els.typingView.classList.add('hidden');
+        els.resultsView.classList.remove('hidden');
+        els.failMessage.classList.add('hidden');
+        document.querySelector('.stats-container').style.opacity = '1';
+        els.configBar.style.opacity = '1';
+        
+        if (netWPM > 0 && els.certBtn) els.certBtn.classList.remove('hidden');
+        renderChart([0, netWPM]); 
+        if(netWPM > 40) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
+
+    function resetTest() {
+        clearInterval(state.timer);
+        state.isRunning = false;
+        document.body.classList.remove('keyboard-open');
+        state.timeLeft = state.timeLimit;
+        state.stats = { correct: 0, incorrect: 0, chars: 0 };
+        
+        els.timer.textContent = state.timeLimit;
+        els.timer.classList.remove('show');
+        els.configBar.style.opacity = '1';
+        els.input.value = '';
+        
+        els.typingView.classList.remove('hidden');
+        els.resultsView.classList.add('hidden');
+        els.customUi.classList.add('hidden');
+        els.textDisplay.classList.remove('hidden');
+        els.textDisplay.scrollTop = 0;
+
+        if (state.mode === 'custom' && !state.text) setupCustomMode();
+        else {
+            if (state.mode !== 'custom') generateText();
+            renderText();
+        }
+        setTimeout(() => els.input.focus(), 100);
+        updateUI();
+    }
+
+    function handleInput() {
+        if (!state.isRunning && els.input.value.length === 1) startTest();
+        if (state.timeLeft <= 0) return;
+
+        const typed = els.input.value;
+        const spans = els.textDisplay.querySelectorAll('span');
+        spans.forEach(s => s.classList.remove('cursor'));
+
+        if (typed.length === 0) {
+            spans.forEach(s => s.className = '');
+            if(spans[0]) spans[0].classList.add('cursor');
+            return;
+        }
+
+        const idx = typed.length - 1;
+        if (!spans[idx]) return;
+
+        state.stats.chars++;
+        
+        if (state.difficulty === 'master' && typed[idx] !== state.text[idx]) return failTest("Failed: Master Mode (Error Made)");
+
+        if (typed[idx] === state.text[idx]) {
+            spans[idx].classList.add('correct');
+            spans[idx].classList.remove('incorrect');
+            state.stats.correct++;
+        } else {
+            spans[idx].classList.add('incorrect');
+            spans[idx].classList.remove('correct');
+            state.stats.incorrect++;
+        }
+
+        if (spans[idx + 1]) {
+            spans[idx + 1].classList.add('cursor');
+            const containerTop = els.textDisplay.getBoundingClientRect().top;
+            const cursorTop = spans[idx + 1].getBoundingClientRect().top;
+            if (cursorTop - containerTop > 60) els.textDisplay.scrollTop += 36;
+        }
+
+        if (typed.length >= state.text.length) endTest();
+    }
+
+    function setupCustomMode() {
+        els.textDisplay.classList.add('hidden');
+        els.customUi.classList.remove('hidden');
+        if(els.customInput) { els.customInput.value = ''; els.customInput.focus(); }
+    }
+
+    function updateUI() {
+        let msg = '';
+        if(state.difficulty === 'expert') msg = 'Expert Mode';
+        else if(state.difficulty === 'master') msg = 'Master Mode';
+        if(state.blindMode) msg += (msg ? ' + ' : '') + 'Blind Mode';
+        
+        if(els.modeIndicator) {
+            els.modeIndicator.textContent = msg;
+            els.modeIndicator.classList.toggle('hidden', !msg);
+        }
+        if(els.restartKeyDisplay) els.restartKeyDisplay.textContent = state.restartKey;
+    }
+
+    // --- FIXED SETTINGS LISTENERS ---
+    function setupSettingsListeners() {
+        document.querySelectorAll('.set-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const key = e.target.parentElement.dataset.key; 
+                const val = e.target.dataset.val;
+                
+                if (val === 'on') state[key] = true;
+                else if (val === 'off') state[key] = false;
+                else state[key] = val;
+
+                e.target.parentElement.querySelectorAll('.set-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+
+                // FIX: Update CSS Variable for Font Size
+                if (key === 'fontSize') {
+                    document.documentElement.style.setProperty('--typing-font-size', val + 'rem');
+                }
+                
+                // FIX: Update CSS Variable for Font Family
+                if (key === 'fontFamily') {
+                    document.documentElement.style.setProperty('--font-mono', val);
+                }
+                
+                if (key === 'blindMode' && !state.isRunning) renderText(); 
+                if (key === 'difficulty' || key === 'restartKey') updateUI();
+            });
+        });
+
+        els.minAccInput?.addEventListener('change', (e) => {
+            state.minAccuracy = parseInt(e.target.value) || 0;
+            updateUI();
+        });
+        els.minSpeedInput?.addEventListener('change', (e) => {
+            state.minSpeed = parseInt(e.target.value) || 0;
+            updateUI();
+        });
+    }
+
+    function renderThemes() {
+        if(!els.themeGrid) return;
+        els.themeGrid.innerHTML = '';
+        Object.keys(THEMES).forEach(key => {
+            const t = THEMES[key];
+            const btn = document.createElement('div');
+            btn.className = 'theme-btn';
+            btn.innerHTML = `<span>${t.name}</span><div class="color-dots"><div class="dot" style="background:${t.bg}"></div><div class="dot" style="background:${t.main}"></div><div class="dot" style="background:${t.text}"></div></div>`;
+            btn.onclick = () => applyTheme(key);
+            if(key === state.currentTheme) btn.classList.add('active');
+            els.themeGrid.appendChild(btn);
+        });
+    }
+
+    function applyTheme(key) {
+        const t = THEMES[key];
+        const r = document.documentElement;
+        r.style.setProperty('--bg-color', t.bg);
+        r.style.setProperty('--main-color', t.main);
+        r.style.setProperty('--caret-color', t.main);
+        r.style.setProperty('--sub-color', t.sub);
+        r.style.setProperty('--text-color', t.text);
+        state.currentTheme = key;
+        document.querySelectorAll('.theme-btn').forEach(b => {
+            b.classList.remove('active');
+            if(b.innerText.includes(t.name)) b.classList.add('active');
+        });
+    }
+
+    function setupEvents() {
+        const handleFocus = () => {
+            els.input.focus();
+            if (window.innerWidth < 768) {
+                document.body.classList.add('keyboard-open');
+                setTimeout(() => els.textDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+            }
+        };
+
+        els.typingArea?.addEventListener('click', handleFocus);
+        els.input?.addEventListener('input', handleInput);
+        
+        els.input?.addEventListener('keydown', e => {
+            if(e.key === 'Backspace') {
+                const len = els.input.value.length;
+                const spans = els.textDisplay.querySelectorAll('span');
+                if(len > 0 && spans[len-1]) spans[len-1].className = '';
+            }
+            if(e.key === state.restartKey) { e.preventDefault(); resetTest(); }
+            if(e.getModifierState("CapsLock")) els.capsWarning?.classList.remove('hidden');
+            else els.capsWarning?.classList.add('hidden');
+        });
+        
+        els.configBar?.addEventListener('click', e => {
+            if(e.target.classList.contains('config-btn') && !e.target.id.includes('settings')) {
+                const mode = e.target.dataset.mode;
+                const time = e.target.dataset.time;
+                if(mode) { state.mode = mode; state.text = ""; resetTest(); }
+                if(time) { state.timeLimit = parseInt(time); resetTest(); }
+                
+                if(mode) document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                if(mode) e.target.classList.add('active');
+                if(time) document.querySelectorAll('[data-time]').forEach(b => b.classList.remove('active'));
+                if(time) e.target.classList.add('active');
+            }
+        });
+
+        els.startCustomBtn?.addEventListener('click', () => {
+            let val = els.customInput.value;
+            val = val.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+            if(val.length > 5) {
+                state.text = val;
+                els.customUi.classList.add('hidden');
+                els.textDisplay.classList.remove('hidden');
+                renderText();
+                handleFocus();
+            }
+        });
+
+        els.restartBtn?.addEventListener('click', resetTest);
+        els.nextTestBtn?.addEventListener('click', resetTest);
+        els.settingsBtn?.addEventListener('click', () => els.settingsModal.classList.remove('hidden'));
+        els.closeSettings?.addEventListener('click', () => els.settingsModal.classList.add('hidden'));
+        
+        els.certBtn?.addEventListener('click', generateCertificate);
+    }
+
+    function generateCertificate() {
+        const name = prompt("Enter Name:");
+        if(!name) return;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "landscape" });
+        const rootStyles = getComputedStyle(document.documentElement);
+        doc.setFillColor(rootStyles.getPropertyValue('--bg-color').trim());
+        doc.rect(0, 0, 297, 210, "F");
+        doc.setTextColor(rootStyles.getPropertyValue('--main-color').trim()); 
+        doc.setFontSize(40);
+        doc.text("Certificate of Typing", 148, 50, { align: "center" });
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.text(`Presented to ${name}`, 148, 80, { align: "center" });
+        doc.setFontSize(30);
+        doc.text(`${document.getElementById('result-wpm').textContent} WPM`, 148, 110, { align: "center" });
+        doc.save("monkeyclone_cert.pdf");
+    }
+
+    function renderChart(data) {
+        if (!els.chart) return;
+        if(state.chartInstance) state.chartInstance.destroy();
+        const ctx = els.chart.getContext('2d');
+        const mainColor = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim();
+        state.chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Start', 'End'],
+                datasets: [{ label: 'WPM', data: data, borderColor: mainColor, tension: 0.4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    init();
+});
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => console.log('SW registered:', registration))
+                .catch(error => console.log('SW registration failed:', error));
+        });
+    }
+</script>
+</body>
+</html>
